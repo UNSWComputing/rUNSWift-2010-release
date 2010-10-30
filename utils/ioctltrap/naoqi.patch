@@ -1,0 +1,13 @@
+--- /usr/bin/naoqi	Sat Feb 27 03:35:56 2010
++++ /usr/bin/naoqi	Mon Jan  1 02:28:27 2007
+@@ -93,6 +93,10 @@
+     naoqi_args.remove("--almonitor")
+     os.execvpe(naoqi_bin, ["naoqi"] + naoqi_args, naoqi_env)
+ 
++if "--ioctltrap" in sys.argv:
++    naoqi_env["LD_PRELOAD"] = "/home/nao/libioctltrap.so.1.0"
++    naoqi_args.remove("--ioctltrap")
++    os.execvpe(naoqi_bin, ["naoqi"] + naoqi_args, naoqi_env)
+ 
+ # Exec naoqi, so that this python process is replaced by naoqi.bin process
+ os.execvpe(naoqi_bin, ["naoqi"] + naoqi_args, naoqi_env)

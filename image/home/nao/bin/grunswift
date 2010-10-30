@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+cat > /tmp/gdb_cmds.txt <<END
+handle SIGINT print
+handle SIGINT nostop
+handle SIGINT pass
+handle SIGINT noignore
+run $*
+END
+gdb `which runswift` -x /tmp/gdb_cmds.txt --return-child-result --quiet

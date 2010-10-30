@@ -1,0 +1,91 @@
+#include "utils/log.hpp"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <boost/regex.hpp>
+#include <fstream>
+#include "utils/basic_onullstream.hpp"
+
+using namespace std;
+using namespace __gnu_cxx;
+
+int logLevel;
+
+map<string, ostream *> *logStreams = NULL;
+map<string, LogLevel> logLevels;
+string logpath;
+
+void initLogs(string level, string path, bool motion) {
+   logpath = path;
+   if (level == "NONE") {
+      logLevel = SILENT - 1;
+      return;
+   }
+   mkdir(path.c_str(), ALLPERMS);
+   // TODO(davidc): template this (and in log.hpp)
+   logLevels["SILENT"] = SILENT;
+   logLevels["QUIET"] = QUIET;
+   logLevels["FATAL"] = FATAL;
+   logLevels["ERROR"] = ERROR;
+   logLevels["WARNING"] = WARNING;
+   logLevels["INFO"] = INFO;
+   logLevels["VERBOSE"] = VERBOSE;
+   // logLevels["DEBUG"] = DEBUG;
+   logLevels["DEBUG1"] = DEBUG1;
+   logLevels["DEBUG2"] = DEBUG2;
+   logLevels["DEBUG3"] = DEBUG3;
+   logLevel = logLevels[level];
+   logStreams = new map<string, ostream *>();
+   /* Stream is created for each directory under robot/
+    * if we want to get really fancy, we could insert them in the
+    * order that would product the optimal red-black tree */
+   static const int numLFiles = %(numlogfiles)d;
+   string lfile[numLFiles] = {
+%(logfiles)s
+   };
+
+   for (int i = 0; i < numLFiles; ++i) {
+      (*logStreams)[lfile[i]] = new ofstream(lfile[i].c_str(), ios_base::out);
+      // Replace motion logstreams with a nullstream, so motion won't make
+      // syscalls. We do this after making an ofstream so the log files still
+      // get wiped, so noone gets confused.
+      if (!motion) {
+         if (lfile[i] == logpath + "/motion.log" ||
+             lfile[i] == logpath + "/touch.log" ||
+             lfile[i] == logpath + "/generator.log" ||
+             lfile[i] == logpath + "/effector.log") {
+            (*logStreams)[lfile[i]] = new onullstream;
+         }
+      }
+   }
+}
+
+void delLogs() {
+   map<string, ostream *>::iterator it;
+   for (it = logStreams->begin(); it != logStreams->end(); ++it) {
+      delete (it->second);
+   }
+   delete logStreams;
+   logStreams = NULL;
+}
+
+string logFileName(const char *fileName) {
+   string sFileName = fileName;
+   boost::regex matchRegex(".*/(.*)/.*?$");
+   string substitute = "/$1.log";
+   // strip non-directory suffix from file name and replace with ".log" to
+   // create the log file name
+   return logpath + regex_replace(sFileName, matchRegex, substitute);
+}
+
+ostream &realLlog(const char *file, int logLevel) {
+   string lFileName = logFileName(file);
+   if (!logStreams) {
+      return cerr;
+   } else if (::logLevel >= logLevel) {
+      return *(*logStreams)[lFileName];
+   } else {
+      static onullstream nullStream;
+      return nullStream;
+   }
+}
+

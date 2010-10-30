@@ -1,0 +1,7 @@
+*.swp
+*.log
+*.swp
+*.pyc
+*.pyo
+*~
+tags

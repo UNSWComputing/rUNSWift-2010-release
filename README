@@ -1,1 +1,81 @@
 Welcome to the rUNSWift 2010 git repository.
+
+The directory sturcture is:
+
+  bin:
+    This is where any executables are stored, such as configuration scripts
+  image:
+    The contents of this directory are copied onto Nao memory sticks when
+    you image them, put custom configuration files or libraries here
+  robot:
+    This is the source code for the rUNSWift 2010 broker, in theory it should
+    know how to play soccer.
+  utils:
+    This is the source code for any off-nao utilities, such as colour
+    calibration or offline debugging utilities.
+
+Follow these steps to get the robot code up and running on your Nao:
+
+Note thesee instructions have been tested on various recent versions of Ubuntu and Debian Linux. Microsoft Windows and Mac OS X are not supported.
+
+h2. General setup 
+
+* clone a copy of the git repository
+ * git clone git://github.com/UNSWComputing/rUNSWift.git runswift2010
+ * cd runswift2010 
+ * git config --global user.name "Your Name" 
+ * git config --global user.email "yourname@yourdomain" 
+* set an environment variable, RUNSWIFT_CHECKOUT_DIR, to the location of your git checkout 
+ * echo export RUNSWIFT_CHECKOUT_DIR=`pwd` >> ~/.bashrc 
+* add $RUNSWIFT_CHECKOUT_DIR/bin to your path 
+ * echo export PATH=\$RUNSWIFT_CHECKOUT_DIR/bin:\$PATH >> ~/.bashrc 
+* download the latest aldebaran-sdk and ctc-robocup from http://www.aldebaran-robotics.com/
+* set an environment variable, AL_DIR, to the location you extracted aldebaran-sdk 
+* set an environment variable, CTC_DIR, to the location you extracted ctc-robocup 
+* add your ssh key to $RUNSWIFT_CHECKOUT_DIR/image/root/.ssh/authorized_keys AND $RUNSWIFT_CHECKOUT_DIR/image/home/nao/.ssh/authorized_keys 
+ * if you don't have an ssh key locally, make one with 'ssh-keygen -t rsa' 
+
+h2. Compiling and running our code 
+
+To get the rUNSWift code to compile, follow these steps: 
+
+* $ sudo apt-get install build-essential libqglviewer-qt4-dev qt4-dev-tools cmake git-core libqwt5-qt4-dev 
+* $ cd $RUNSWIFT_CHECKOUT_DIR/robot 
+* $ mkdir build; cd build 
+* $ cmake .. -DCMAKE_TOOLCHAIN_FILE=$CTC_DIR/toolchain-geode.cmake 
+* $ make 
+
+Note, there are a few libraries you will need, including the qt4 toolkit, boost, and libfreetype (you could just install things as you see linker errors pop up :)) 
+
+In the future you can just go to $RUNSWIFT_CHECKOUT_DIR/robot/build and type 'make' to compile changes, you don't need to run 'cmake' again. 
+
+To upload your code to the robot, use the 'nao_sync' script, found in the 'bin' directory of the repository. 
+
+To run the code, ssh into the robot and check that naoqi is running (you may need to restart naoqi if you have updated libagent), then type 
+
+* $ runswift 
+
+Or, tap the robot's chest 3 times quickly to start runswift without having an ssh connection to the robot.
+
+To compile Off-Nao, follow these steps: 
+
+* $ cd $RUNSWIFT_CHECKOUT_DIR/utils/offnao 
+* $ mkdir build; cd build 
+* $ cmake .. #ignore the CMake Warning at CMakeLists.txt:131 (ADD_EXECUTABLE) 
+* $ make 
+ * *Note:* If you are not running Ubuntu Karmic with libqglviewer-qt4-dev 2.3.1, you will get a compilation error saying 'qglviewer-qt4/qglviewer.h: No such file or directory'. A dodgy workaround is to create a link to the QGLViewer directory: 
+ ** sudo ln -s /usr/include/QGLViewer /usr/include/qglviewer-qt4 
+
+h2. Setting up a robot 
+
+A new robot from Aldebaran should already contain a memory stick with the latest OpenNao image. Otherwise, upload an image to ~/image on the robot, login, and run: 
+
+nao-autoflash ~/image/imagename 
+
+* Plug an ethernet cable into the Nao, and turn it on. 
+* Go to http://nao.local, login with nao:nao 
+* In the 'Network' tab, connect to your local wireless network 
+* In the 'Settings' tab, set the robot's name, password, buddy icon, time zone 
+* Do a nao_sync -s to configure the robot for use with nao_sync 
+* Reboot the Nao
+* Do a nao_sync -ar to upload the latest software and home directory

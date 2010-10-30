@@ -1,0 +1,23 @@
+HeadYaw = 0
+HeadPitch = 1
+LShoulderPitch = 2
+LShoulderRoll = 3
+LElbowYaw = 4
+LElbowRoll = 5
+LHipYawPitch = 6
+LHipRoll = 7
+LHipPitch = 8
+LKneePitch = 9
+LAnklePitch = 10
+LAnkleRoll = 11
+RHipRoll = 12
+RHipPitch = 13
+RKneePitch = 14
+RAnklePitch = 15
+RAnkleRoll = 16
+RShoulderPitch = 17
+RShoulderRoll = 18
+RElbowYaw = 19
+RElbowRoll = 20
+NUMBER_OF_JOINTS = 21
+

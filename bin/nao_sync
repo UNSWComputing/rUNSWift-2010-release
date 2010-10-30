@@ -1,0 +1,102 @@
+#!/bin/bash
+
+FALSE=1
+TRUE=0
+
+usage() {
+   echo -e "nao_sync: Synchronise robot with image directory in repository"
+   echo -e "Usage: $0 robot -s"
+   echo -e "Usage: $0 robot [-ardx]"
+   echo -e
+   echo -e "Options:"
+   echo -e "\trobot:\tName of target robot, without .local (eg. demo-man)"
+   echo -e "\t-a:\tUpload libagent. Disabled by default"
+   echo -e "\t-r:\tUpload runswift. Disabled by default"
+   echo -e "\t-s:\tSetup ssh config. Disabled by default"
+   echo -e "\t-d:\tDelete contents of ~nao. Disabled by default"
+   echo -e "\t-x:\tDon't sync image directory. Disabled by default"
+   exit 1
+}
+
+# Try to autodetect whether we are on the same subnet as the robots or
+# whether we need to tunnel through roborouter
+RSYNC_SSH="ssh"
+
+# Find the runswift checkout dir
+if [ ! -d "$RUNSWIFT_CHECKOUT_DIR" -o ! -d "$RUNSWIFT_CHECKOUT_DIR/image" ]; then
+   echo "Image directory not found! Set your RUNSWIFT_CHECKOUT_DIR"
+   exit 1
+fi
+
+# Process args. If more than one robot is supplied, only the last one is used
+robot=""
+agent=$FALSE
+runswift=$FALSE
+setup=$FALSE
+delete=$FALSE
+image=$TRUE
+
+while getopts ":xrasd" opt; do
+   case $opt in 
+      x)   image=$FALSE
+            ;;
+      r)   runswift=$TRUE
+            ;;
+      a)   agent=$TRUE
+            ;;
+      s)   setup=$TRUE
+            ;;
+      d)   delete=$TRUE
+            ;;
+      \?)   usage
+            ;;
+   esac
+done
+
+case ${!OPTIND} in
+   demo-man|engineer|heavy|medic|pyro|scout|sniper|soldier|spy|nao)
+         robot=${!OPTIND}.local
+         ;;
+   *)    robot=${!OPTIND}
+         ;;
+esac
+
+if [ "robot" = "" ]; then
+   usage
+fi
+
+# Sync with the ropot
+if [ $setup -eq $TRUE ]; then
+   cat $RUNSWIFT_CHECKOUT_DIR/image/etc/ssh/sshd_config | $RSYNC_SSH -l nao $robot "su -c 'cat > /etc/ssh/sshd_config'" 
+   cat $RUNSWIFT_CHECKOUT_DIR/image/root/.ssh/authorized_keys | $RSYNC_SSH -l nao $robot "su -c 'mkdir -p /root/.ssh; cat > /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys'" 
+   echo "sshd config updated, you need to log into the robot and run: su -c '/etc/init.d/sshd restart &'"
+   exit 0
+fi
+
+if [ $delete -eq $TRUE ]; then
+   del='--del'
+fi
+
+if [ $image -eq $TRUE ]; then
+   chmod 600 $RUNSWIFT_CHECKOUT_DIR/image/home/nao/.ssh/authorized_keys $RUNSWIFT_CHECKOUT_DIR/image/root/.ssh/authorized_keys 
+   rsync -rlptP -e "$RSYNC_SSH -l root" --exclude=nao $RUNSWIFT_CHECKOUT_DIR/image/ $robot:/
+   rsync -rlptP $del -e "$RSYNC_SSH -l nao" $RUNSWIFT_CHECKOUT_DIR/image/home/nao $robot:/home/
+   $RSYNC_SSH $robot -l root '/bin/rm /etc/rc5.d/S15connman 2>/dev/null && (echo rebooting due to wireless change; /sbin/reboot)'
+fi
+
+if [ $agent -eq $TRUE ]; then
+   if [ -f "$RUNSWIFT_CHECKOUT_DIR/robot/build/sdk/lib/naoqi/libagent.so" ]; then
+      rsync -rlptP -e "$RSYNC_SSH -l nao" $RUNSWIFT_CHECKOUT_DIR/robot/build/sdk/ $robot:/home/nao/naoqi/
+   else
+      echo "libagent does not exist!"
+   fi
+fi
+
+if [ $runswift -eq $TRUE ]; then
+   if [ -f "$RUNSWIFT_CHECKOUT_DIR/robot/build/runswift" ]; then
+      rsync -rlptP -e "$RSYNC_SSH -l nao" $RUNSWIFT_CHECKOUT_DIR/robot/build/runswift $robot:/home/nao/bin/
+   else
+      echo "runswift does not exist!"
+   fi
+fi
+

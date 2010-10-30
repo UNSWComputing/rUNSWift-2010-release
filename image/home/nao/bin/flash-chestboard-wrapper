@@ -1,0 +1,9 @@
+#!/bin/bash
+
+/etc/init.d/naoqi stop
+if /usr/bin/flash-chestboard; then
+   flite -t "chest flash succeeded"
+else
+   flite -t "chest flash failed. reboot me!"
+fi
+/etc/init.d/naoqi start

@@ -95,7 +95,7 @@ void populate_options(po::options_description &config_file_options) {
                                               "/home/nao/data/behaviours"),
        "path to python behaviours")
       ("behaviour.pythonclass,p",
-       po::value<string>()->default_value("GameControllerSkill"),
+       po::value<string>()->default_value("DribbleSkill"),
        "The desired top level Python skill class.")
       ("default.body", po::value<string>()->default_value("REF_PICKUP"),
        "default body action type if behaviour isn't running")

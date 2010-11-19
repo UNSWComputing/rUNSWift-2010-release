@@ -69,8 +69,8 @@ void AgentEffector::actuate(JointValues joints, ActionCommand::LED leds,
    shared_data->sonar[i] = sonar;
    shared_data->actuators_latest = i;
    // we need to wait one cycle in case standing was set after AgentTouch is run
-   // TODO(stuartr) verify this assignment should be used as a truth value
-   if ((shared_data->standing = true) && kill_standing) {
+   shared_data->standing = kill_standing;
+   if (kill_standing) {
       kill_standing = false;
       shared_data->standing = false;
    } else {
